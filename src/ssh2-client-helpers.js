@@ -14,23 +14,23 @@ function setUpConnection(Client, config) {
         connect: function (sessionHandler) {
             return connect(Client, config, sessionHandler);
         },
-        exec: function (command, optionsOrFn) {
-            return exec(Client, config, command, optionsOrFn);
+        exec: function (command, options, configureStreamOptions) {
+            return exec(Client, config, command, options, configureStreamOptions);
         }
     };
 }
 
 function connect(Client, config, sessionHandler) {
     return _connect(Client, config, function (conn) {
-        return sessionHandler(function (command, options) {
-            return _exec(conn, command, options);
+        return sessionHandler(function (command, options, configureStreamOptions) {
+            return _exec(conn, command, options, configureStreamOptions);
         });
     });
 }
 
-function exec(Client, config, command, optionsOrFn) {
+function exec(Client, config, command, options, configureStreamOptions) {
     return connect(Client, config, function (exec) {
-        return exec(command, optionsOrFn);
+        return exec(command, options, configureStreamOptions);
     });
 }
 
@@ -65,30 +65,20 @@ function _connect(Client, config, sessionHandler) {
     });
 }
 
-function _exec(conn, command, optionsOrFn) {
+function _exec(conn, command, options, configureStreamOptions) {
+    options = options || {};
+    
     var defaultConfigureStream = function (stream) {
-        _configureStream(stream, optionsOrFn);
+        _configureStream(stream, configureStreamOptions);
     };
-    var configureStream = (typeof(optionsOrFn) === 'function') ? optionsOrFn : defaultConfigureStream;
-
-    return __exec(conn, command, configureStream);
-}
-
-function __exec(conn, command, configureStreamHandler) {
+    var configureStreamHandler = (typeof(configureStreamOptions) === 'function') ? configureStreamOptions : defaultConfigureStream;
+    
     return new Promise(function (resolve, reject) {
         _log('Executing: ' + command);
 
-        conn.exec(command, function (err, stream) {
+        conn.exec(command, options, function (err, stream) {
             if (!err) {
-                var configureStreamPromise = Promise.resolve();
-                if (configureStreamHandler) {
-                    var maybePromise = configureStreamHandler(stream);
-
-                    var isPromise = maybePromise && typeof(maybePromise.then) === 'function';
-                    if (isPromise) {
-                        configureStreamPromise = maybePromise;
-                    }
-                }
+                var configureStreamPromise = _toPromise(configureStreamHandler(stream));
 
                 stream.on('close', function(code, signal) {
                     _log('Stream close: code: ' + code + ', signal: ' + signal);
@@ -124,6 +114,15 @@ function _configureStream(stream, options) {
         var stderr = options.stderr || process.stderr;
         stream.stderr.pipe(stderr);
     }
+}
+
+function _toPromise(maybePromise) {
+    var isPromise = maybePromise && typeof(maybePromise.then) === 'function';
+    if (isPromise) {
+        return maybePromise;
+    }
+    
+    return Promise.resolve();
 }
 
 function _log(msg) {
