@@ -1,6 +1,6 @@
 # SSH2 Client Helpers
 
-... Description ...
+Promise-based helper functions to make the SSH2 client easier to use.
 
 
 ## Prerequisites
