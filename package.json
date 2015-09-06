@@ -3,15 +3,15 @@
   "version": "1.0.0",
   "description": "Promise-based helper functions to make the SSH2 client easier to use",
   "main": "dist/ssh2-client-helpers.js",
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
     "babel": "^5.8.23",
+    "babel-runtime": "^5.8.20",
     "ssh2": "^0.4.11"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-      "build": "mkdir -p dist && ./node_modules/.bin/babel --source-maps inline src --out-dir dist",
+    "build": "mkdir -p dist && ./node_modules/.bin/babel --optional runtime --source-maps inline src --out-dir dist",
     "prepublish": "npm run build"
   },
   "author": "Christian Rasmussen <christian.rasmussen@me.com>",
